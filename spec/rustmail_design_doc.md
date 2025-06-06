@@ -20,11 +20,13 @@
 ## 🧰 CLI Commands
 
 ### `check`
-Check for new/unread mail in the default or specified folder.
+Check for new/unread mail in the default or specified folder. The command prints
+the number of new messages to standard output.
 
 ```bash
 rustmail check
 rustmail check inbox
+# prints the number of new emails (e.g. `3`)
 ```
 
 ### `list [<folder>] [--limit N] [--offset N]`
