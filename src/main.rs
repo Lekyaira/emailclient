@@ -1,63 +1,8 @@
 use clap::{Parser, Subcommand};
 use log::LevelFilter;
 
-use std::path::PathBuf;
-
-use imap::{ClientBuilder, TlsKind};
-use sha1::{Digest, Sha1};
-use hex;
-
 mod config;
-
-fn get_password(cmd: &str) -> anyhow::Result<String> {
-    config::retrieve_password(cmd)
-}
-
-fn store_message(account: &config::EmailAccount, folder: &str, uid: u32, body: &[u8]) -> anyhow::Result<PathBuf> {
-    let mut hasher = Sha1::new();
-    hasher.update(folder.as_bytes());
-    hasher.update(uid.to_string().as_bytes());
-    let id = hex::encode(hasher.finalize());
-
-    let mut dir = config::account_data_dir(&account.email);
-    dir.push(folder);
-    std::fs::create_dir_all(&dir)?;
-    let path = dir.join(format!("{}.eml", id));
-    std::fs::write(&path, body)?;
-    log::info!("Saved message {} to {:?}", uid, path);
-    Ok(path)
-}
-
-fn check_mail(folder: Option<String>) -> anyhow::Result<()> {
-    let cfg = config::load_config()?;
-    let account = cfg.email_account;
-    let folder = folder
-        .or(account.default_folder.clone())
-        .unwrap_or_else(|| "inbox".to_string());
-
-    let password = get_password(&account.password_cmd)?;
-    let client = ClientBuilder::new(&account.imap_server, account.imap_port)
-        .tls_kind(TlsKind::Native)
-        .connect()?;
-    let mut session = client.login(&account.username, password).map_err(|e| e.0)?;
-
-    session.select(&folder)?;
-    let uids = session.search("UNSEEN")?;
-    for uid in uids.iter() {
-        let fetches = session.fetch(uid.to_string(), "RFC822")?;
-        for fetch in fetches.iter() {
-            if let Some(body) = fetch.body() {
-                let uid = fetch.uid.ok_or_else(|| anyhow::anyhow!("missing uid"))?;
-                store_message(&account, &folder, uid, body)?;
-            }
-        }
-    }
-
-    println!("{}", uids.len());
-
-    session.logout()?;
-    Ok(())
-}
+mod mail;
 /// RustMail command line interface.
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -114,7 +59,7 @@ fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Check { folder } => {
-            check_mail(folder)?;
+            mail::imap::check_mail(folder)?;
         }
         Commands::List { folder, limit, offset } => {
             println!(
