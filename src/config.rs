@@ -1,6 +1,8 @@
 use std::path::{PathBuf};
 use serde::{Deserialize, Serialize};
 
+use anyhow::Context;
+
 /// Top level configuration structure for RustMail.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -50,6 +52,28 @@ pub fn load_config() -> anyhow::Result<Config> {
     Ok(cfg)
 }
 
+/// Run `cmd` using the system shell and return its trimmed stdout as a String.
+pub fn retrieve_password(cmd: &str) -> anyhow::Result<String> {
+    let out = std::process::Command::new("sh")
+        .arg("-c")
+        .arg(cmd)
+        .output()
+        .with_context(|| format!("running password command: {}", cmd))?;
+    if !out.status.success() {
+        anyhow::bail!("password command exited with status: {}", out.status);
+    }
+    let pwd = String::from_utf8(out.stdout)?;
+    Ok(pwd.trim().to_string())
+}
+
+/// Return the base directory for storing mail for the given email address.
+pub fn account_data_dir(email: &str) -> PathBuf {
+    let mut dir = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
+    dir.push("rustmail");
+    dir.push(email);
+    dir
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,5 +83,13 @@ mod tests {
         let path = default_config_path();
         let s = path.to_string_lossy();
         assert!(s.ends_with("rustmail/config.toml") || s.ends_with("rustmail\\config.toml"));
+    }
+
+    #[test]
+    fn test_account_data_dir() {
+        let path = account_data_dir("me@example.com");
+        let s = path.to_string_lossy();
+        assert!(s.contains("rustmail"));
+        assert!(s.ends_with("me@example.com") || s.ends_with("me@example.com"));
     }
 }
