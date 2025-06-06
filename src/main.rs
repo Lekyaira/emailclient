@@ -53,6 +53,8 @@ fn check_mail(folder: Option<String>) -> anyhow::Result<()> {
         }
     }
 
+    println!("{}", uids.len());
+
     session.logout()?;
     Ok(())
 }
