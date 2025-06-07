@@ -42,6 +42,7 @@ Read the full content of a locally stored email by path reference.
 
 ```bash
 rustmail read inbox/b9f1c6d3c3b8f8c2c442f15f66fd8c7e0f1a2f1b
+rustmail read inbox/<subject>
 ```
 
 ### `send`
@@ -98,12 +99,12 @@ imap_port = 993
 smtp_server = "smtp.example.com"
 smtp_port = 587
 username = "me@example.com"
-password_cmd = "pass rustmail/me@example.com"
+password_file = "passwords/me@example.com"
 default_folder = "inbox"
 use_tls = true
 ```
 
-- `password_cmd`: external command to fetch password or app token securely (e.g., from `pass`, `gpg`, `keychain`)
+- password_file: Optional, ask for password if does not exist. File should be secured and contents hashed.
 - Multiple profiles can be added via `[email_account.<label>]` for future multi-account support
 
 ---
