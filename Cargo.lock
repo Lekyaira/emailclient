@@ -256,6 +256,7 @@ dependencies = [
  "native-tls",
  "serde",
  "sha1",
+ "tempfile",
  "toml",
 ]
 
