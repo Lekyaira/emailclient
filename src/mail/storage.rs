@@ -16,7 +16,7 @@ pub fn store_message(
     hasher.update(uid.to_string().as_bytes());
     let id = hex::encode(hasher.finalize());
 
-    let mut dir = config::account_data_dir(&account.email);
+    let mut dir = config::account_data_dir(&account.email)?;
     dir.push(folder);
     std::fs::create_dir_all(&dir)?;
     let path = dir.join(format!("{}.eml", id));
